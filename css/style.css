@@ -1,0 +1,185 @@
+	body {
+		margin: 5 auto;
+		font-family: Tahoma, Geneva, sans-serif;
+		font-size: 11px;
+	}
+	
+	form {
+		margin: 0px;
+		padding: 0px;
+		display: inline;	
+	}
+	
+	a {
+		color: #c91d01;
+		font-size: 12px;
+		text-decoration: underline;
+	}
+	
+	a:hover {
+		text-decoration: none;
+	}
+	
+    input.text {
+	    font-size: 10px;
+	    border: 1px solid #6b7ea9;
+	    height: 19px;
+    }
+
+    .ok {
+	    font: 11px Verdana; 
+	    font-weight: normal; 
+	    color: #009900;
+    }
+    .error {
+	    font-family: Verdana, Arial, Helvetica, sans-serif;
+	    font-size: 11px;
+	    font-weight: normal; 
+	    color: #FF0000;
+    }
+	
+	#container {
+		width: 550px;
+		height: 650px;
+		clear: both;
+		margin: 0 auto;
+	}
+	
+	#header {
+		/*width: 400px;*/
+		height: 100px;
+		max-height: 100px;
+	}
+	
+	
+	#content {
+		border: 1px solid #6b7ea9;
+		height: 500px;
+		width: 580px;
+		padding: 10px;
+		display: block;
+	}
+
+	#footer {
+		font-family: Arial, Helvetica, sans-serif;
+		text-align: center;
+		padding-top: 10px;	
+	}
+
+	input.submit {
+		background: #000;
+		font-family: Tahoma, Geneva, sans-serif;
+		font-size: 11px;
+		color: #fff;
+		font-weight: bold;
+		height: 23px;
+		border: 1px solid #000;
+		width: 120px;
+	}
+
+	input.btn {
+		background: #6b7ea9;
+		width: 100px;
+	}
+	span.package {
+	    font-weight: bold;
+	    font-size: 13px;
+	    font-family: Arial, Helvetica, sans-serif;	
+	}
+	
+	div.package {
+	    padding: 5px;
+	    text-align: left;
+	    float: left;
+	    width: 120px;
+	    border: 1px solid #ccc;
+	    margin: 5px;
+	    display: block;
+	}
+	
+	.package_desc {
+	    padding: 5px;
+	    color: #555753;
+	    font-size: 11px;
+	    font-weight: normal;	
+	}
+	
+	h3 {
+	    margin: 0px;
+	}
+	
+	.package_amt {
+	    font-size: 10px;
+	    float: left;
+	    font-weight: bold;
+	    color: #4e9a06;
+	}
+	
+	.package_select {
+	    float: right;
+	    font-weight: bold;
+	    color: #3465a4;
+	    font-size: 10px;
+	    cursor: pointer;
+	}
+	
+	.package_selected {
+	    float: right;
+	    font-weight: bold;
+	    color: #a40000;
+	    font-size: 10px;
+	}
+	
+	#service_period {
+	    font-weight: normal;
+	    font-size: 11px;
+	    color: #555753;
+	    padding: 5px;
+	}
+	
+	.left {
+	    float: left;
+	}
+	
+	.right {
+	    float: right;
+	}
+	
+	.clear {
+	    clear: both;
+	}
+	
+    div.error {
+	    font-size: 11px;
+	    font-weight: normal;
+	    color: #ff0000;
+	    border: 1px solid #ff0000;
+	    background: #FFC url(../images/icon_cross.png) 8px 4px no-repeat;
+	    text-align: center;
+	    padding: 5px;
+	    padding-left: 25px;
+	    width: 350px;
+   		margin: 0 auto;
+    }
+
+    div.ok {
+	    font-size: 11px;
+	    font-weight: normal;
+	    color: #006600;
+	    border: 1px solid #006600;
+	    background: #FFC url(../images/icon_ok.png) 8px 4px no-repeat;
+	    text-align: center;
+	    padding: 5px;
+	    padding-left: 40px;
+    }
+    
+    span.label {
+        font-weight: bold;
+        font-size: 11px;
+        /*font-family: Arial, Helvetica, sans-serif;*/
+    }
+    
+    div.label {
+        width: 120px;
+    }
+
