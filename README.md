@@ -1,4 +1,4 @@
-xBilling Frontend v1.1.0
+#xBilling Frontend v1.1.0
 Frontend for xBilling module for the renowned zPanel(10.1.1)
 
 [![Build Status](https://travis-ci.org/modpluz/xbilling-frontend.png?branch=master)](https://travis-ci.org/modpluz/xbilling-frontend)
