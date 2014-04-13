@@ -1,7 +1,7 @@
 <?php
  /**
  * PayPal IPN Listener for ZPanel xBilling Module
- * Version : 102
+ * Version : 1.1.0
  * @author Aderemi Adewale (modpluz @ ZPanel Forums)
  * Email : goremmy@gmail.com
  * @desc Waits for connection from PayPal and update user account / domains accordingly

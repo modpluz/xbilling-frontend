@@ -1,487 +1,133 @@
 <?php
-/**
- * xBilling configuration settings
- * Version : 102
+ /**
+ * PayPal IPN Listener for ZPanel xBilling Module
+ * Version : 1.1.0
  * @author Aderemi Adewale (modpluz @ ZPanel Forums)
  * Email : goremmy@gmail.com
- * @desc XWMS Functions
+ * @desc Waits for connection from PayPal and update user account / domains accordingly
 */
-if(!isset($dir)){
-    $dir = '';
-}
 
-require_once($dir.'classes/xmwsclient.class.php');
-
-function getSettings(){
-    global $cfg;
-    $settings = new xmwsclient();
+   require_once('config.php');
+   require_once('functions/xbilling.php');
     
-    $settings->InitRequest($cfg['panel_url'], 'xbilling', 'GetSettings', $cfg['api_key']);
-    $settings->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
+    $settings = getSettings();
 
-    $res = $settings->XMLDataToArray($settings->Request($settings->BuildRequest()));
-
-    if ($res['xmws']['response'] != '1101') {
-        die("API Error: " . $res['xmws']['content']);
-    }
-    return $res['xmws']['content']['settings'];
-}
-
-function getPackages(){
-    global $cfg;
-    $pkg = new xmwsclient();
-    
-    $pkg->InitRequest($cfg['panel_url'], 'xbilling', 'GetHostingPackages', $cfg['api_key']);
-    $pkg->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-
-    $res = $pkg->XMLDataToArray($pkg->Request($pkg->BuildRequest()));
-    if ($res['xmws']['response'] != '1101') {
-        die("API Error: " . $res['xmws']['content']);
-    }
-    if(isset($res['xmws']['content']['packages'])){
-        return $res['xmws']['content']['packages'];
-    }
-}
-
-function checkUserName($username){
-    global $cfg;
-    if($username){
-        $xmws = new xmwsclient();
-        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'CheckUserName', $cfg['api_key']);
-        $xmws->SetRequestData('<zpx_user>' .$username. '</zpx_user>');
-
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
+    if(isset($_POST) && is_array($_POST)){
+        $log_dir = dirname(__FILE__).'/logs';
+        //does log directory exists?
+        if(!is_dir('logs')){
+            @mkdir($log_dir, 0777);
         }
-        return $res['xmws']['content']['result']['user_exists'];
-    }
-}
 
-function voucherInfo($code){
-    global $cfg;
-    
-    if($code){
-        $xmws = new xmwsclient();
-        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'CheckVoucher', $cfg['api_key']);
-	$xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid><voucher>' .$code. '</voucher>');
-
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-        
-        //die(var_dump($res));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
+        if($settings['logs_enabled_yn'] == 1){
+            $fp = fopen($log_dir.'/ipn_'.date('Y-m-d_Hi').'.txt', 'a');
+            fwrite($fp, file_get_contents('php://input')."\n\n");
         }
-        return $res['xmws']['content']['result'];
-    }
-}
 
-function getPackageName($pkg_id){
-    global $cfg;
-    if($pkg_id){
-        $pkg = new xmwsclient();
-        
-        $pkg->InitRequest($cfg['panel_url'], 'xbilling', 'GetPackageName', $cfg['api_key']);
-        //$pkg->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-        $pkg->SetRequestData('<package_id>' .$pkg_id. '</package_id>');
-
-        $res = $pkg->XMLDataToArray($pkg->Request($pkg->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
+        $raw_post_data = file_get_contents('php://input');
+        $raw_post_array = explode('&', $raw_post_data);
+        $myPost = array();
+        foreach ($raw_post_array as $keyval) {
+          $keyval = explode ('=', $keyval);
+          if (count($keyval) == 2)
+             $myPost[$keyval[0]] = urldecode($keyval[1]);
         }
-        return $res['xmws']['content']['package']['name'];
-    }
-}
-
-function getPeriodInfo($pkg_id, $pid){
-    global $cfg;
-    if($pkg_id && $pid){
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'GetPeriodInfo', $cfg['api_key']);
-        $xmws->SetRequestData('<package_id>' .$pkg_id. '</package_id><period_id>' .$pid. '</period_id>');
-
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
+        // read the post from PayPal system and add 'cmd'
+        $req = 'cmd=_notify-validate';
+        if(function_exists('get_magic_quotes_gpc')) {
+           $get_magic_quotes_exists = true;
+        } 
+        foreach ($myPost as $key => $value) {        
+           if($get_magic_quotes_exists == true && get_magic_quotes_gpc() == 1) { 
+                $value = urlencode(stripslashes($value)); 
+           } else {
+                $value = urlencode($value);
+           }
+           $req .= "&$key=$value";
         }
-        return $res['xmws']['content']['period'];
-    }
-}
-
-function registerUser(){
-    global $cfg;
-    if(is_array($_POST)){
-        $post_parms = '<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>';
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'CreateNewAccount', $cfg['api_key']);
-           
         
-        foreach($_POST as $fld=>$value){
-            if($fld != 'btn_submit' && $fld != 'section'){
-                if(!$value){
-                    $value = 'n/a';
-                }
-                $post_parms .= '<'.$fld.'>' .$value. '</'.$fld.'>';
+         
+         
+        // STEP 2: Post IPN data back to paypal to validate         
+        $ch = curl_init('https://www.sandbox.paypal.com/cgi-bin/webscr');
+        //curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $req);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        curl_setopt($ch, CURLOPT_FORBID_REUSE, 1);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Connection: Close'));
+         
+        // In wamp like environments that do not come bundled with root authority certificates,
+        // please download 'cacert.pem' from "http://curl.haxx.se/docs/caextract.html" and 
+        // set the directory path of the certificate as shown below.
+        
+        /* You probably want to replace this file once you go live */
+        curl_setopt($ch, CURLOPT_CAINFO, dirname(__FILE__) . '/cert/cacert.pem');
+        if( !($res = curl_exec($ch)) ) {
+            if($fp){
+                fwrite($fp, curl_error($ch)."\n\n");
+                curl_close($ch);
             }
-        }                
-        
-        if($post_parms){
-            $xmws->SetRequestData($post_parms);
-            $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
+            exit;
         }
-        
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
-        }
-        
-        $ret['error'] = 0;
-        
-        if(!isset($res['xmws']['content']['invoice']['reference']) && isset($res['xmws']['content']['invoice']['message'])){
-            $ret['error'] = 1;
-            $ret['result'] = $res['xmws']['content']['invoice']['message'];
-        } elseif(isset($res['xmws']['content']['invoice']['reference']) && !isset($res['xmws']['content']['invoice']['message'])){
-            $ret['result'] = $res['xmws']['content']['invoice']['reference'];
-        }
-        return $ret;
-    }
-}
-
-function fetchInvoice($reference){
-    global $cfg;
-    if($reference){
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'GetInvoiceInfo', $cfg['api_key']);
-        $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid><ref>' .$reference. '</ref>');
-
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
-        }        
-        
-        $ret['error'] = 0;
-        
-        if($res['xmws']['content']['invoice']['error'] == 1){
-            $ret['error'] = 1;
-            $ret['message'] = $res['xmws']['content']['invoice']['message'];
-        } else {
-            $ret['result'] = $res['xmws']['content']['invoice'];
-        }
-        return $ret;
-    }
-}
-
-
-function fetchUserInfo($user_id){
-    global $cfg;
-    if($user_id){
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'GetUserInfo', $cfg['api_key']);
-        $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid><uid>' .$user_id. '</uid>');
-
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
-        }        
-        
-        $ret['error'] = 0;
-        
-        if($res['xmws']['content']['user']['error'] == 1){
-            $ret['error'] = 1;
-            $ret['message'] = $res['xmws']['content']['user']['message'];
-        } else {
-            $ret['result'] = $res['xmws']['content']['user'];
-        }
-
-        return $ret;
-    }
-}
-
-function fetchPaymentMethods(){
-    global $cfg;
-
-    $xmws = new xmwsclient();        
-    $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'GetPaymentMethods', $cfg['api_key']);
-    $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-    $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-    if ($res['xmws']['response'] != '1101') {
-        die("API Error: " . $res['xmws']['content']);
-    }        
-        
-    $ret['error'] = 0;
-        
-    if(isset($res['xmws']['content']['methods']) && $res['xmws']['content']['methods']['error'] == 1){
-        $ret['error'] = 1;
-        $ret['message'] = $res['xmws']['content']['methods']['message'];
-    } else {
-        $ret['result'] = $res['xmws']['content']['options'];
-    }
-    //print_r($ret);
-    return $ret;   
-}
-
-function PaymentOptionHTML($id, $html, $invoice_info){
-    global $cfg, $settings;
-    
-    if($id && $html){
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'GetPaymentCustomFields', $cfg['api_key']);
-        $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid><id>' .$id. '</id>');
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            die("API Error: " . $res['xmws']['content']);
-        }        
+        curl_close($ch);
+         
+         
+        // STEP 3: Inspect IPN validation result and act accordingly         
+        if (strcmp ($res, "VERIFIED") == 0) {
+            // process payment            
+            $payment_method_id = $_POST['custom'];
+            $invoice_reference = $_POST['invoice'];
+            $transaction_id = $_POST['txn_id'];
+            $payment_status = $_POST['payment_status'];
+            $payment_amount = $_POST['mc_gross'];
+            $payment_currency = $_POST['mc_currency'];
+            $receiver_email = $_POST['receiver_email'];
+            $payment_date = date("Y-m-d", strtotime(urldecode($_POST['payment_date'])));
             
-        $ret['error'] = 0;
             
-        if(isset($res['xmws']['content']['methods']) && $res['xmws']['content']['methods']['error'] == 1){
-            $ret['error'] = 1;
-            $ret['message'] = $res['xmws']['content']['fields']['message'];
-        } else {
-            if(is_array($res['xmws']['content']['fields'])){
-               //replace system-wide tags
-               if(is_array($invoice_info)){
-                    $html = str_replace("{{country_code}}", $settings['country_code'], $html);
-                    $html = str_replace("{{invoice_desc}}", $invoice_info['desc'], $html);
-                    $html = str_replace("{{invoice_id}}", $invoice_info['reference'], $html);
-                    $html = str_replace("{{invoice_amount}}", $invoice_info['total_amount'], $html);
-                    $html = str_replace("{{discount_rate}}", $invoice_info['discount'], $html);
-                    $html = str_replace("{{currency}}", $settings['currency'], $html);
-                    $html = str_replace("{{payment_method_id}}", $id, $html);
-               }
-               $fields = $res['xmws']['content']['fields'];
-               //replace custom user tags
-                foreach($fields as $html_field){
-                    $field = json_decode($html_field,true);
-                    if(is_array($field)){
-                        if($field['name']){
-                           $html = str_replace("{{".$field['name']."}}", $field['value'], $html);
-                        }
-                    }
-                }
-            }
-           $ret = $html;
-          //$ret['result'] = $res['xmws']['content']['fields'];
-        }
-        return $ret;    
-    }
-}
-
-function PaymentOptionFields($id){
-    global $cfg;
-    
-    $ret = array();
-    if($id){
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'GetPaymentCustomFields', $cfg['api_key']);
-        $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid><id>' .$id. '</id>');
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if(is_array($res['xmws']['content']['fields'])){
-               $fields = $res['xmws']['content']['fields'];
-                foreach($fields as $html_field){
-                    $field = json_decode($html_field,true);
-                    if(is_array($field)){
-                        if($field['name']){
-                            $ret[$field['name']] = $field['value'];
-                        }
-                    }
-                }
-        }
-        return $ret;   
-    }
-}
-
-function UpdateInvoice($invoice_reference, $transaction_id, $payment_method_id, $payment_date){
-    global $cfg;
-
-    if($invoice_reference && $transaction_id && $payment_method_id && $payment_date){
-        $xmws = new xmwsclient();        
-        $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'CompleteInvoice', $cfg['api_key']);
-        $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid><ref>' .$invoice_reference. '</ref><transaction_id>' .$transaction_id. '</transaction_id><date>' .$payment_date. '</date><payment_method_id>' .$payment_method_id. '</payment_method_id>');
-        $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-        if ($res['xmws']['response'] != '1101') {
-            return "API Error: " . $res['xmws']['content'];
-        }        
-    }        
-}
-
-function InvoiceReminder(){
-    global $cfg;
-    
-    $xmws = new xmwsclient();        
-    $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'InvoiceReminder', $cfg['api_key']);
-    $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-     $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-     if ($res['xmws']['response'] != '1101') {
-         return "API Error: " . $res['xmws']['content'];
-     }
-}
-
-function RenewalReminders(){
-    global $cfg;
-    
-    $xmws = new xmwsclient();        
-    $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'RemindDomainExpiration', $cfg['api_key']);
-    $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-     $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-     if ($res['xmws']['response'] != '1101') {
-         return "API Error: " . $res['xmws']['content'];
-     }    
-}
-
-function DisableExpiredDomains(){
-    global $cfg;
-    
-    $xmws = new xmwsclient();        
-    $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'DisableExpiredDomains', $cfg['api_key']);
-    $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-     $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-
-     if ($res['xmws']['response'] != '1101') {
-         return "API Error: " . $res['xmws']['content'];
-     }    
-}
-
-function DeleteExpiredDomains(){
-    global $cfg;
-    
-    $xmws = new xmwsclient();        
-    $xmws->InitRequest($cfg['panel_url'], 'xbilling', 'DomainExpireDelete', $cfg['api_key']);
-    $xmws->SetRequestData('<zpx_uid>' .$cfg['zpx_uid']. '</zpx_uid>');
-     $res = $xmws->XMLDataToArray($xmws->Request($xmws->BuildRequest()));
-    var_dump($res);
-     if ($res['xmws']['response'] != '1101') {
-         return "API Error: " . $res['xmws']['content'];
-     }        
-    
-}
-
-function js_header(){
-    global $cfg, $packages, $settings, $package_id, $period_id, $section;
-
-    $js_str = "
-    function getServicePeriods(pkg_id){
-        var _packages = {};
-        
-        ";
-            if(is_array($packages)){
-                $js_str .= "var srvc_periods;\n";
-                foreach($packages as $package){
-                    if($package['service_periods']){
-                        $srvc_periods = json_decode($package['service_periods'],true);
-
-                        $js_str .= "srvc_periods = {};\n";
-                        //echo("srvc_periods[".$package['id']."] = new Object();\n");
-                        if(is_array($srvc_periods)){
-                            foreach($srvc_periods as $idx=>$item){
-                                //$itm_id = $package['id'].'_'.$item['id'];
-                                $js_str .= "srvc_periods[".$item['id']."] = new Object();\n";
-                                $js_str .= "srvc_periods[".$item['id']."]['id'] = '".$item['id']."';\n";
-                                $js_str .= "srvc_periods[".$item['id']."]['duration'] = '".$item['duration']."';\n";
-                                $js_str .= "srvc_periods[".$item['id']."]['amount'] = '".number_format($item['amount'],2)."';\n";
-                            }
-                        }
-                    }
-                    $js_str .= "_packages[".$package['id']."] = srvc_periods;\n";
-                }
-            }
-        
-        $js_str .= "return _packages[pkg_id];
-    }";
-    
-    $js_str .= "
-    function _select_pkg(pkg_id){
-        if(pkg_id){
-            var _selected_pid = $('#package_id').val();
-            var _srvc_periods = getServicePeriods(pkg_id);
-            var _selected_period = '';
-    ";
-     if(isset($period_id)){
-            $js_str .= "_selected_period = '$period_id';";
-     }
-            
-     $js_str .= "
-            if(_selected_pid){
-                $('#selected_pkg_'+_selected_pid).hide();
-                $('#select_pkg_'+_selected_pid).show();
-            }
-            
-            if(_srvc_periods){
-                var _period_id;
-                var _period_amt;
-                var _period_duration;
-                var _periods_html = '';
+            //is this payment completed
+            if($payment_status == 'Completed'){
+                $invoice_info = fetchInvoice($invoice_reference);
+        		$invoice_info['discount_amount'] = 0;
+        		if(isset($invoice_info['result']['discount'])){
+        		  $invoice_info['discount_amount'] = (float) ($invoice_info['result']['total_amount'] / 100) * $invoice_info['result']['discount'];
+        		}
                 
-                $.each(_srvc_periods, function(idx, item){
-                    $.each(item, function(itm_idx, itm_val) {
-                         if(itm_idx == 'id'){
-                            _period_id = itm_val;
-                         }
-                         if(itm_idx == 'duration'){
-                            _period_duration = itm_val;
-                         }
-                         if(itm_idx == 'amount'){
-                            _period_amt = itm_val;
-                         }
-                    });
-                    
-                    if(_period_id && _period_amt && _period_duration){
-                        if(_period_id > 0){
-                            _periods_html += '<input type=\"radio\" name=\"package_period\" id=\"package_pid\" value=\"'+_period_id+'\" onclick=\"_set_period('+_period_id+');\"';
-                            if(_selected_period == _period_id){
-                                _periods_html += ' checked=\"checked\"';
-                            }
-                            _periods_html += '> '+_period_duration+ ' Month';
-                            if(_period_duration > 1){
-                                _periods_html += 's';
-                            }
-                            _periods_html += ' @ '+_period_amt+' ".$settings['currency']."<br />';
-                        } else {
-                            _periods_html = 'This Package is Free';
-                            _set_period(_period_id);
-                        }
-                        /*_periods_html += '<input type=\"radio\" name=\"package_period\" id=\"package_pid\" value=\"'+_period_id+'\" /> '+_period_duration+ ' Month @ '+_period_amt+' ".$settings['currency']."<br />';*/
+                //fetch payment method fields
+                $payment_fields = PaymentOptionFields($payment_method_id);
+                if(!isset($invoice_info['discount'])){
+                	$invoice_info['discount'] = 0;
+                }
+                //verify that receiver email matches business_email and system 
+                //currency matches payment currency
+                if($payment_fields['business_email'] == $receiver_email && $settings['currency'] == $payment_currency){
+                    //verify that amount paid is the expected amount
+                    if(strpos($invoice_info['result']['total_amount'], ".") === false){
+                        $invoice_info['result']['total_amount'] .= '.00';
                     }
-                });
-                $('#service_period').html(_periods_html);         
+                    
+                    $invoice_amount = (float) $invoice_info['result']['total_amount'] - $invoice_info['discount_amount'];
+                    //fwrite($fp, $invoice_amount);
+                    
+                    if($invoice_amount == $payment_amount){
+                        //make sure this invoice hasn't been processed
+                        if(!$invoice_info['transaction_id']){
+                            UpdateInvoice($invoice_reference, $transaction_id, $payment_method_id, $payment_date);
+                        }
+                        
+                    }                    
+                }
+            
             }
-            
-            $('#package_id').val(pkg_id);
-            $('#selected_pkg_'+pkg_id).show();
-            $('#select_pkg_'+pkg_id).hide();
-            
+        } else if (strcmp ($res, "INVALID") == 0) {
+            // log for manual investigation
+        }  
+        
+        if($fp){
+            fclose($fp);  
         }
     }
-    
-    function _set_period(_pid){
-        if(_pid){
-            $('#period_id').val(_pid);
-        }
-    }
-    
-
-	$(function(){
-	";
-    if(isset($package_id) && isset($period_id) && $section == 1){
-        $js_str .= "
-        _select_pkg($package_id);
-        _set_period($period_id);";
-    }
-	$js_str .= "});";
-
-    return $js_str;
-}
 ?>

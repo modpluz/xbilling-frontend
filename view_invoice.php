@@ -1,7 +1,7 @@
 <?php
  /**
  * Front-end billing package for ZPanel xBilling Module
- * Version : 102
+ * Version : 1.1.0
  * @author Aderemi Adewale (modpluz @ ZPanel Forums)
  * Email : goremmy@gmail.com
  * @desc Payment Invoice
