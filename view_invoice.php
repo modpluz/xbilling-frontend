@@ -1,8 +1,8 @@
 <?php
  /**
- * Front-end billing package for ZPanel xBilling Module
- * Version : 1.1.0
- * @author Aderemi Adewale (modpluz @ ZPanel Forums)
+ * Front-end billing package for ZPanel/Sentora xBilling Module
+ * Version : 1.2.0
+ * @author Aderemi Adewale (modpluz @ Sentora Forums)
  * Email : goremmy@gmail.com
  * @desc Payment Invoice
 */
