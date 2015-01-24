@@ -94,10 +94,10 @@ class xmwsclient {
      * @return string The XML repsonse. 
      */
     function PostRequest($url, $data, $optional_headers = null) {
-        $log_dir = dirname(__FILE__).'/logs';
+        $log_dir = 'logs';
         $log_file = 'api_error_'.date('Y-m-d_Hi').'.txt';
         //does log directory exists?
-        if(!is_dir('logs')){
+        if(!is_dir($log_dir)){
             @mkdir($log_dir, 0777);
         }
         
