@@ -94,6 +94,13 @@ class xmwsclient {
      * @return string The XML repsonse. 
      */
     function PostRequest($url, $data, $optional_headers = null) {
+        $log_dir = dirname(__FILE__).'/logs';
+        $log_file = 'api_error_'.date('Y-m-d_Hi').'.txt';
+        //does log directory exists?
+        if(!is_dir('logs')){
+            @mkdir($log_dir, 0777);
+        }
+        
         $params = array('http' => array(
                 'method' => 'POST',
                 'content' => $data
@@ -104,11 +111,22 @@ class xmwsclient {
         $ctx = stream_context_create($params);
         $fp = @fopen($url, 'rb', false, $ctx);
         if (!$fp) {
+            //log error
+            $err_str = error_get_last();
+            $err_fp = fopen($log_dir.'/'.$log_file, 'a');
+            fwrite($err_fp, $err_str."\n\n");
+            fclose($err_fp);
             die("Problem reading data from " . $url . "");
         }
         $response = @stream_get_contents($fp);
         //var_dump($response);
         if ($response == false) {
+            //log error
+            $err_str = error_get_last();
+            $err_fp = fopen($log_dir.'/'.$log_file, 'a');
+            fwrite($err_fp, $err_str."\n\n");
+            fclose($err_fp);
+                    
             die("Problem reading data from " . $url . "");
         }
         return $response;
