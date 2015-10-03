@@ -52,6 +52,12 @@
                         $invoice_info['total_amount'] .= '.00';
                     }
                     $method_html = PaymentOptionHTML($method['id'],urldecode($method['html']),$invoice_info);
+		    $method_html = str_replace("{{country_code}}", $settings['country_code'], $method_html);
+                    $method_html = str_replace("{{invoice_desc}}", $invoice_info['desc'], $method_html);
+                    $method_html = str_replace("{{invoice_id}}", $invoice_info['reference'], $method_html);
+                    $method_html = str_replace("{{invoice_amount}}", $invoice_info['total_amount'], $method_html);
+                    $method_html = str_replace("{{currency}}", $settings['currency'], $method_html);
+                    $method_html = str_replace("{{discount_rate}}", $invoice_info['discount_amount'], $method_html);
                 }
                 
                 $payment_methods_html[$method['id']] = $method_html;
