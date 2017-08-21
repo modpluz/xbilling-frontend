@@ -76,7 +76,7 @@
          
          
         // STEP 3: Inspect IPN validation result and act accordingly         
-        if (strcmp ($res, "VERIFIED") == 0) {
+        if ((strcmp ($res, "VERIFIED") == 0) || (strcmp ($res, "verified") == 0)) {
             // process payment            
             $payment_method_id = $_POST['custom'];
             $invoice_reference = $_POST['invoice'];

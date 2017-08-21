@@ -52,7 +52,7 @@
                         $invoice_info['total_amount'] .= '.00';
                     }
                     $method_html = PaymentOptionHTML($method['id'],urldecode($method['html']),$invoice_info);
-		    $method_html = str_replace("{{country_code}}", $settings['country_code'], $method_html);
+					$method_html = str_replace("{{country_code}}", $settings['country_code'], $method_html);
                     $method_html = str_replace("{{invoice_desc}}", $invoice_info['desc'], $method_html);
                     $method_html = str_replace("{{invoice_id}}", $invoice_info['reference'], $method_html);
                     $method_html = str_replace("{{invoice_amount}}", $invoice_info['total_amount'], $method_html);
@@ -114,7 +114,9 @@ function _payment_method(method_id){
 </head>
 
 <body>
+<div class="signup signup-body">
 	<div id="container">
+    <div class="flex-container">
     	<div id="header">&nbsp;</div>
             <?php
                 if($error && $error_msg){
@@ -265,5 +267,7 @@ function _payment_method(method_id){
             <?php } ?>
         </div>
     </div>
+    </div><!-- closes flex-container -->
+</div>
 </body>
 </html>
